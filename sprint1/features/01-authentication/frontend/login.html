@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090b11">
+  <title>Sign in | Encore</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f5f7fb;
+      --muted: #a4aab6;
+      --blue: #2478f2;
+      --blue-bright: #4a9bff;
+      --panel: rgba(10, 13, 21, .91);
+      --line: rgba(235, 240, 249, .34);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: safe center;
+      padding: 42px 20px;
+      color: var(--ink);
+      background: #080a10;
+      font-family: "DM Sans", sans-serif;
+    }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      isolation: isolate;
+      pointer-events: none;
+      background: radial-gradient(ellipse at 50% 42%, #303239 0, #171a21 46%, #090b10 100%);
+    }
+
+    .poster {
+      --move-x: 0px;
+      --move-y: 0px;
+      position: absolute;
+      top: var(--poster-top);
+      left: var(--poster-left);
+      width: clamp(245px, 29vw, 410px);
+      aspect-ratio: 2 / 3;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, .28);
+      background-color: #222;
+      background-position: center;
+      background-size: cover;
+      box-shadow: 0 28px 90px rgba(0, 0, 0, .65);
+      opacity: .83;
+      pointer-events: auto;
+      transform: translate(-50%, -50%) translate(var(--move-x), var(--move-y)) rotate(var(--poster-rotate)) scale(var(--poster-scale));
+      transition: transform 450ms cubic-bezier(.2, .8, .2, 1), opacity 350ms ease, filter 350ms ease;
+      cursor: pointer;
+      animation: poster-arrive 1s cubic-bezier(.2, .7, .2, 1) both;
+    }
+
+    .poster::before {
+      position: absolute;
+      inset: 0;
+      content: "";
+      background: linear-gradient(180deg, rgba(5, 7, 12, .06) 20%, rgba(5, 7, 12, .16) 43%, rgba(5, 7, 12, .88) 100%);
+      transition: background-color 300ms ease;
+    }
+
+    .poster:hover, .poster.is-active { z-index: 2; opacity: 1; filter: saturate(1.12); }
+    .poster:hover { transform: translate(-50%, -50%) translate(var(--move-x), calc(var(--move-y) - 12px)) rotate(var(--poster-rotate)) scale(calc(var(--poster-scale) + .045)); }
+    .poster.is-active { transform: translate(-50%, -50%) translate(var(--move-x), calc(var(--move-y) - 8px)) rotate(0deg) scale(calc(var(--poster-scale) + .025)); }
+
+    .poster--avengers {
+      --poster-left: 17%;
+      --poster-top: 40%;
+      --poster-rotate: -12deg;
+      --poster-scale: .9;
+      z-index: 1;
+      background-image: url("https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?auto=format&fit=crop&w=900&q=85");
+      animation-delay: 100ms;
+    }
+
+    .poster--dune {
+      --poster-left: 83%;
+      --poster-top: 39%;
+      --poster-rotate: 9deg;
+      --poster-scale: .95;
+      z-index: 2;
+      background-image: url("https://images.unsplash.com/photo-1509316785289-025f5b846b35?auto=format&fit=crop&w=900&q=85");
+      animation-delay: 220ms;
+    }
+
+    .poster--ramayan {
+      --poster-left: 50%;
+      --poster-top: 91%;
+      --poster-rotate: 4deg;
+      --poster-scale: .86;
+      z-index: 0;
+      background-image: url("https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=900&q=85");
+      animation-delay: 340ms;
+    }
+
+    .poster__title {
+      position: absolute;
+      right: 20px;
+      bottom: 27px;
+      left: 20px;
+      z-index: 1;
+      margin: 0;
+      color: #fff;
+      font-size: clamp(23px, 2.5vw, 36px);
+      font-weight: 700;
+      line-height: 1.04;
+      text-align: center;
+      text-shadow: 0 2px 15px rgba(0, 0, 0, .72);
+      transition: transform 300ms ease;
+    }
+
+    .poster:hover .poster__title, .poster.is-active .poster__title { transform: translateY(-4px); }
+
+    .backdrop__shade {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      background: radial-gradient(ellipse at center, rgba(4, 6, 11, .04) 0, rgba(4, 6, 11, .2) 48%, rgba(4, 6, 11, .64) 100%);
+      pointer-events: none;
+    }
+
+    .login-panel {
+      position: relative;
+      z-index: 4;
+      width: min(100%, 456px);
+      min-height: 790px;
+      padding: 46px 42px 34px;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid rgba(65, 147, 255, .85);
+      border-radius: 34px;
+      background: linear-gradient(180deg, rgba(12, 15, 24, .53), rgba(10, 13, 21, .76) 72%);
+      backdrop-filter: blur(4px);
+      box-shadow: 0 0 0 1px rgba(52, 126, 229, .18), 0 0 44px rgba(22, 91, 196, .13), 0 28px 90px rgba(0, 0, 0, .5);
+      animation: panel-in 700ms cubic-bezier(.2, .75, .25, 1) both;
+    }
+
+    .brand {
+      display: grid;
+      place-items: center;
+      gap: 8px;
+      margin-bottom: auto;
+      padding: 4px 0 46px;
+      text-align: center;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 54px;
+      height: 54px;
+      place-items: center;
+      border: 2px solid #f7f9fc;
+      border-radius: 17px 17px 17px 5px;
+      color: #fff;
+      font-size: 25px;
+      font-weight: 700;
+      line-height: 1;
+      transform: rotate(-5deg);
+    }
+
+    .brand-name {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2.4px;
+      text-transform: uppercase;
+    }
+
+    .form-content { width: 100%; }
+
+    h1 {
+      margin: 0 0 34px;
+      font-size: 34px;
+      font-weight: 600;
+      letter-spacing: 0;
+    }
+
+    .field { margin-bottom: 25px; }
+    .field[hidden] { display: none; }
+
+    .field label {
+      display: block;
+      margin-bottom: 7px;
+      color: #c3c8d2;
+      font-size: 14px;
+    }
+
+    .field input {
+      width: 100%;
+      height: 43px;
+      padding: 0 1px;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      border-radius: 0;
+      outline: none;
+      background: transparent;
+      color: var(--ink);
+      font: inherit;
+      font-size: 17px;
+      transition: border-color 160ms ease, box-shadow 160ms ease;
+    }
+
+    .field input::placeholder { color: #707784; }
+    .field input:focus { border-color: var(--blue-bright); box-shadow: 0 1px 0 var(--blue-bright); }
+
+    .password-wrap { position: relative; }
+    .password-wrap input { padding-right: 58px; }
+
+    .reveal {
+      position: absolute;
+      right: 0;
+      bottom: 8px;
+      padding: 5px 0 5px 10px;
+      border: 0;
+      background: transparent;
+      color: #d4d9e2;
+      cursor: pointer;
+      font: inherit;
+      font-size: 12px;
+    }
+
+    .forgot-row { display: flex; justify-content: flex-end; margin-top: -5px; }
+    a { color: inherit; text-decoration: none; }
+    a:hover { color: var(--blue-bright); }
+
+    .forgot-link, .signup-link { font-size: 14px; font-weight: 600; }
+    .primary-button {
+      width: 100%;
+      min-height: 58px;
+      margin-top: 52px;
+      border: 1px solid rgba(112, 175, 255, .5);
+      border-radius: 8px;
+      background: var(--blue);
+      box-shadow: 0 8px 24px rgba(25, 99, 217, .24);
+      color: white;
+      cursor: pointer;
+      font: inherit;
+      font-size: 16px;
+      font-weight: 700;
+      transition: background 160ms ease, transform 160ms ease;
+    }
+
+    .primary-button:hover { background: #3288ff; transform: translateY(-1px); }
+    .primary-button:active { transform: translateY(0); }
+
+    .status {
+      min-height: 20px;
+      margin: 12px 0 0;
+      color: #a9ceff;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .social-block { margin: 14px 0 44px; text-align: center; }
+    .social-title { margin: 0 0 20px; color: var(--muted); font-size: 14px; }
+    .social-buttons { display: flex; justify-content: center; gap: 18px; }
+
+    .social-button {
+      display: grid;
+      width: 54px;
+      height: 54px;
+      place-items: center;
+      border: 1px solid rgba(255, 255, 255, .06);
+      border-radius: 50%;
+      background: rgba(89, 97, 111, .32);
+      color: #fff;
+      cursor: pointer;
+      font-family: Arial, sans-serif;
+      font-size: 23px;
+      font-weight: 700;
+      transition: background 160ms ease, transform 160ms ease;
+    }
+
+    .social-button:hover { background: rgba(113, 127, 148, .5); transform: translateY(-2px); }
+    .facebook { color: #5ca2ff; }
+    .google { font-size: 24px; background: conic-gradient(from -45deg, #4285f4 0 25%, #34a853 25% 49%, #fbbc05 49% 70%, #ea4335 70% 86%, #4285f4 86%); background-clip: text; -webkit-text-fill-color: transparent; }
+    .apple { font-size: 27px; }
+
+    .signup {
+      margin: auto 0 0;
+      color: #d8dce4;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .signup-link { margin-left: 4px; color: #58a1ff; }
+
+    .signup-link[aria-disabled="true"] { cursor: default; opacity: .65; }
+
+    .account-view { display: none; text-align: center; }
+    .account-view.is-visible { display: block; }
+    .account-name { margin: 4px 0; color: #a9ceff; font-size: 17px; font-weight: 600; }
+    .account-email { margin: 0; color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+    .logout-button { margin-top: 36px; }
+
+    @keyframes arrive { from { opacity: .45; } to { opacity: 1; } }
+    @keyframes panel-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes poster-arrive { from { opacity: 0; filter: blur(5px); } to { opacity: .83; filter: blur(0); } }
+
+    @media (max-width: 520px) {
+      body { padding: 16px 12px; }
+      .poster { width: min(57vw, 230px); }
+      .poster--avengers { --poster-left: 29%; --poster-top: 37%; --poster-scale: .9; }
+      .poster--dune { --poster-left: 71%; --poster-top: 45%; --poster-scale: .9; }
+      .poster--ramayan { --poster-left: 50%; --poster-top: 76%; --poster-scale: .82; }
+      .poster__title { right: 12px; bottom: 18px; left: 12px; font-size: 23px; }
+      .login-panel { min-height: min(790px, calc(100svh - 32px)); padding: 30px 25px 25px; border-radius: 28px; }
+      .brand { padding-bottom: 34px; }
+      h1 { margin-bottom: 28px; font-size: 30px; }
+      .field { margin-bottom: 21px; }
+      .primary-button { margin-top: 42px; }
+      .social-block { margin-bottom: 34px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+      .poster { --move-x: 0px !important; --move-y: 0px !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="backdrop" id="poster-backdrop" aria-label="Interactive cinematic poster collage">
+    <button class="poster poster--avengers" type="button" aria-label="Focus Avengers Doomsday inspired poster" aria-pressed="false">
+      <span class="poster__title">AVENGERS<br>DOOMSDAY</span>
+    </button>
+    <button class="poster poster--dune" type="button" aria-label="Focus Dune inspired poster" aria-pressed="false">
+      <span class="poster__title">DUNE</span>
+    </button>
+    <button class="poster poster--ramayan" type="button" aria-label="Focus Ramayan inspired poster" aria-pressed="false">
+      <span class="poster__title">RAMAYAN</span>
+    </button>
+    <div class="backdrop__shade" aria-hidden="true"></div>
+  </div>
+  <main class="login-panel" aria-labelledby="login-title">
+    <div class="brand" aria-label="Encore, live show tickets">
+      <span class="brand-mark" aria-hidden="true">E</span>
+      <p class="brand-name">Encore</p>
+    </div>
+
+    <section class="form-content">
+      <h1 id="login-title">Log in</h1>
+      <form id="login-form">
+        <div class="field" id="name-field" hidden>
+          <label for="name">Name</label>
+          <input id="name" name="name" type="text" autocomplete="name" placeholder="Your name" minlength="2" maxlength="80">
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="password-wrap">
+            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required minlength="8">
+            <button class="reveal" id="reveal-password" type="button" aria-label="Show password" aria-pressed="false">Show</button>
+          </div>
+        </div>
+
+        <div class="forgot-row"><a class="forgot-link" href="#forgot">Forgot password?</a></div>
+        <button class="primary-button" type="submit">Log in</button>
+        <p class="status" id="form-status" role="status" aria-live="polite"></p>
+      </form>
+
+      <section class="account-view" id="account-view" aria-live="polite">
+        <p class="account-name" id="account-name"></p>
+        <p class="account-email" id="account-email"></p>
+        <button class="primary-button logout-button" id="logout-button" type="button">Log out</button>
+      </section>
+
+      <div class="social-block">
+        <p class="social-title">or continue with</p>
+        <div class="social-buttons" aria-label="Other sign-in options">
+          <button class="social-button facebook" type="button" aria-label="Continue with Facebook">f</button>
+          <button class="social-button google" type="button" aria-label="Continue with Google">G</button>
+          <button class="social-button apple" type="button" aria-label="Continue with Apple">&#63743;</button>
+        </div>
+      </div>
+    </section>
+
+    <p class="signup" id="mode-prompt">Don't have an account?<a class="signup-link" id="mode-toggle" href="#signup">Sign up</a></p>
+  </main>
+
+  <script>
+    const posterBackdrop = document.querySelector("#poster-backdrop");
+    const posters = [...document.querySelectorAll(".poster")];
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    window.addEventListener("pointermove", (event) => {
+      if (prefersReducedMotion.matches || event.pointerType === "touch") return;
+      const offsetX = (event.clientX / window.innerWidth - 0.5) * 24;
+      const offsetY = (event.clientY / window.innerHeight - 0.5) * 20;
+      posters.forEach((poster, index) => {
+        const depth = (index + 1) / posters.length;
+        poster.style.setProperty("--move-x", `${offsetX * depth}px`);
+        poster.style.setProperty("--move-y", `${offsetY * depth}px`);
+      });
+    });
+
+    window.addEventListener("pointerout", (event) => {
+      if (event.relatedTarget) return;
+      posters.forEach((poster) => {
+        poster.style.setProperty("--move-x", "0px");
+        poster.style.setProperty("--move-y", "0px");
+      });
+    });
+
+    posters.forEach((poster) => {
+      poster.addEventListener("click", () => {
+        const activate = !poster.classList.contains("is-active");
+        posters.forEach((item) => {
+          item.classList.toggle("is-active", item === poster && activate);
+          item.setAttribute("aria-pressed", String(item === poster && activate));
+        });
+      });
+    });
+
+    const passwordInput = document.querySelector("#password");
+    const revealButton = document.querySelector("#reveal-password");
+    const statusMessage = document.querySelector("#form-status");
+    const form = document.querySelector("#login-form");
+    const nameField = document.querySelector("#name-field");
+    const nameInput = document.querySelector("#name");
+    const title = document.querySelector("#login-title");
+    const submitButton = form.querySelector(".primary-button");
+    const modePrompt = document.querySelector("#mode-prompt");
+    const modeToggle = document.querySelector("#mode-toggle");
+    const accountView = document.querySelector("#account-view");
+    let isRegisterMode = false;
+
+    revealButton.addEventListener("click", () => {
+      const shouldReveal = passwordInput.type === "password";
+      passwordInput.type = shouldReveal ? "text" : "password";
+      revealButton.textContent = shouldReveal ? "Hide" : "Show";
+      revealButton.setAttribute("aria-label", `${shouldReveal ? "Hide" : "Show"} password`);
+      revealButton.setAttribute("aria-pressed", String(shouldReveal));
+    });
+
+    function setMode(registerMode) {
+      isRegisterMode = registerMode;
+      title.textContent = registerMode ? "Create account" : "Log in";
+      submitButton.textContent = registerMode ? "Create account" : "Log in";
+      nameField.hidden = !registerMode;
+      nameInput.required = registerMode;
+      document.querySelector(".forgot-row").hidden = registerMode;
+      modePrompt.firstChild.textContent = registerMode ? "Already have an account?" : "Don't have an account?";
+      modeToggle.textContent = registerMode ? "Log in" : "Sign up";
+      modeToggle.href = registerMode ? "#login" : "#signup";
+      statusMessage.textContent = "";
+    }
+
+    function showAccount(user) {
+      form.hidden = true;
+      document.querySelector(".social-block").hidden = true;
+      modePrompt.hidden = true;
+      accountView.classList.add("is-visible");
+      document.querySelector("#account-name").textContent = `Welcome, ${user.name}`;
+      document.querySelector("#account-email").textContent = user.email;
+      title.textContent = "You're signed in";
+    }
+
+    async function requestJson(url, options = {}) {
+      const response = await fetch(url, {
+        ...options,
+        headers: { "Content-Type": "application/json", ...options.headers },
+        credentials: "same-origin",
+      });
+      const result = response.status === 204 ? null : await response.json();
+      if (!response.ok) throw new Error(result?.detail || "Something went wrong. Please try again.");
+      return result;
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      statusMessage.textContent = isRegisterMode ? "Creating your account..." : "Signing you in...";
+      submitButton.disabled = true;
+      try {
+        const payload = {
+          email: document.querySelector("#email").value,
+          password: passwordInput.value,
+        };
+        if (isRegisterMode) payload.name = nameInput.value;
+        const user = await requestJson(`/api/auth/${isRegisterMode ? "register" : "login"}`, {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+        showAccount(user);
+      } catch (error) {
+        statusMessage.textContent = error.message;
+      } finally {
+        submitButton.disabled = false;
+      }
+    });
+
+    document.querySelector(".forgot-link").addEventListener("click", (event) => {
+      event.preventDefault();
+      statusMessage.textContent = "Password reset is not configured yet. Contact support to recover your account.";
+    });
+
+    document.querySelectorAll(".social-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        statusMessage.textContent = `${button.getAttribute("aria-label").replace("Continue with ", "")} sign-in is not configured yet.`;
+      });
+    });
+
+    modeToggle.addEventListener("click", (event) => {
+      event.preventDefault();
+      setMode(!isRegisterMode);
+    });
+
+    document.querySelector("#logout-button").addEventListener("click", async () => {
+      try {
+        await requestJson("/api/auth/logout", { method: "POST" });
+        accountView.classList.remove("is-visible");
+        form.hidden = false;
+        document.querySelector(".social-block").hidden = false;
+        modePrompt.hidden = false;
+        setMode(false);
+        statusMessage.textContent = "You have been logged out.";
+      } catch (error) {
+        statusMessage.textContent = error.message;
+      }
+    });
+
+    requestJson("/api/auth/me")
+      .then(showAccount)
+      .catch(() => {});
+
+    if (window.location.protocol === "file:") {
+      statusMessage.textContent = "Start the authentication server and open http://127.0.0.1:8000 to sign in.";
+    }
+  </script>
+</body>
+</html>
